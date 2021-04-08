@@ -1,0 +1,113 @@
+lazydot
+=======
+
+I really love Graphviz to make drawings using keyboard only - much easier than
+fiddling around with the mouse to move everything in its position. And moving
+it all again when inserting or removing items.
+
+I even use it on the fly to draw graphs during presentations or when explaining
+more complicated things to colleagues. Because it's true: "A picture is worth a
+thousand words."
+
+But I had to encounter some weaknesses of the DOT language in this concrete use
+case. This lead me to cobble together the simplified lazydot minilanguage, a
+preprocessor for Graphviz.
+
+Its main (and only) features are:
+
+- Use '.' and '$' instead of repeating the ID of the first or last edge in the
+  last sequence of nodes. This makes it much easier to change a node's ID and
+  means less typing.
+
+- Set attributes right after nodes, edges or subgraphs are defined. Especially
+  useful when you want to tweak an edge: Just write the attributes after the
+  arrow. You don't have to put a separate node-arraw-node-attributes sequence
+  to modify a single edge.
+
+- Apply attributes on individual nodes and edges only, but not on other items
+  that follow. Allows you to reorder things without changing colors and shapes
+  unintentionally.
+
+- Define a set of attributes as template and apply it to multiple items.
+  Something like "redbox" is easier to read and faster to write than two
+  attributes.
+
+- Clusters don't need a fixed prefix and no numerical id. The syntax is
+  similiar to that of nodes: You label it and put attributes in square-brackets
+  if you need any.
+
+- You don't have to put IDs in quotes if it contains a dash or other special
+  characters - only whitespaces and equal signs require you to use quotes.
+
+Most of that is used in the following example:
+
+    graph [ rankdir=LR labelloc=t fontsize=18
+            label="Objective Social Situation and Right-Wing Populism"
+            URL=https://pub.uni-bielefeld.de/record/2564817 ]
+             
+    template dimension [ color="#008891" fontcolor="#008891" fontsize=14 ]
+
+    cluster "Desintegration\n(socio-structural dimension)" [ =dimension ] {
+            "Social situation"
+    }
+
+    cluster "Desintegration\n(institutional dimension)" [ =dimension ] {
+            . -> [ label=.27 ] "Political\nalientation"
+            . -> [ label=.26 ] "Distrust of\npolitical elites"
+    }
+
+    cluster "Endangering\ndemocratic attitudes" [ =dimension ] {
+            $ -> [ label=.24 ] "Right-wing\npopulist orientation\n.42"
+            "Political\nalientation" -> [ label=.35 ] $
+            "Social situation" -> [ label=.28  ] $
+    }
+
+Usage
+-----
+
+As lazydot outputs DOT code, just use it with a pipe:
+
+    lazydot example.lazydot | dot -Tsvg -oexample.svg
+
+My setup for presentations is quite simple: On the presentation screen I open
+an image viewer which redraws when the file changes (e.g. GNOME Image Viewer).
+On another screen I edit the input file. A bash loop calls the above command
+whenever inotifywait notices a change to the input:
+
+    while inotifywait -e modify example.lazydot; do
+        lazydot example.lazydot | dot -Tsvg -oexample.svg
+    done
+
+Bugs and Limitations
+--------------------
+
+- Sub-clusters inherit attributes from their parents. But stopping that
+  counterintuitive behavior is rather complicated: Each attribute set in the
+  parent cluster but not in its children must be reset by outputing the
+  attribute's default value in the children.
+
+- This program will leak memory, if a parser or lexer error occurs. The memory
+  strdup'ed in the lexer will only be freed, if the token is processed
+  successfully. Some kind of bookkeeping of each allocated string would be
+  required to free all memory at all events. But as lazydot terminates on
+  errors, that won't be a real problem.
+
+- Good code doesn't store its state in a global variable and would rather
+  use a reentrant lexer/parser. But this code will never be used as library or
+  by a multi-threaded program...
+
+Build
+-----
+
+You need g++ (with C++11 support), flex and bison. Then it's nothing more than:
+
+    make
+
+Install the result (as root):
+
+   cp lazydot /usr/local/bin/lazydot
+
+License
+-------
+
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>

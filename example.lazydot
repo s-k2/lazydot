@@ -1,0 +1,20 @@
+graph [ rankdir=LR labelloc=t fontsize=18
+        label="Objective Social Situation and Right-Wing Populism"
+        URL=https://pub.uni-bielefeld.de/record/2564817 ]
+         
+template dimension [ color="#008891" fontcolor="#008891" fontsize=14 ]
+
+cluster "Desintegration\n(socio-structural dimension)" [ =dimension ] {
+        "Social situation"
+}
+
+cluster "Desintegration\n(institutional dimension)" [ =dimension ] {
+        . -> [ label=.27 ] "Political\nalientation"
+        . -> [ label=.26 ] "Distrust of\npolitical elites"
+}
+
+cluster "Endangering\ndemocratic attitudes" [ =dimension ] {
+        $ -> [ label=.24 ] "Right-wing\npopulist orientation\n.42"
+        "Political\nalientation" -> [ label=.35 ] $
+        "Social situation" ->  [ label=.28  ] $
+}
